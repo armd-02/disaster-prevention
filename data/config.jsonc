@@ -1,0 +1,128 @@
+// Community Mapmaker Config
+{
+    "default": {
+        "keep_default_view": false,
+        "default_view": [
+            34.7541,
+            134.8433
+        ],
+        "maxbounds": "",
+        "_maxbounds": [
+            [
+                35.09545,
+                135.86492
+            ],
+            [
+                34.94088,
+                136.11914
+            ]
+        ],
+        "initZoom": 15,
+        "pc_minZoom": 1,
+        "phone_minZoom": 5,
+        "maxZoom": 21,
+        "zoomSnap": 0.5,
+        "iconViewZoom": 13,
+        "act_iconViewZoom": 5,
+        "bookmark": true
+    },
+    "targets": [
+        "disaster",
+        "tree"
+    ],
+    "listTable": {
+        // "targets"はConf.targetsをカテゴリ表示、"activity"はactivity(フォームデータ)を表示
+        "targets": [
+            "activity",
+            "tree"
+        ],
+        "update_mode": "",
+        "playback": {
+            "view": false,
+            "zoomLevel": 15,
+            "timer": 4000
+        }
+    },
+    "google": {
+        "Analytics": "",
+        "AppScript": "https://script.google.com/macros/s/AKfycbxIgo827rPVGLmCNcgIsdCefvlKoKM79UJq0YIMcZjoUMqJx3su4BI-4JQzIVT3SuIZsA/exec",
+        "targetName": "activity"
+    },
+    "splash": {
+        "url": "./image/notepad.png"
+    },
+    "static": {
+        "mode": false,
+        "osmjson": "",
+        "osmbounds": {
+            "NW": {
+                "lat": 45.7392,
+                "lng": 119.0340
+            },
+            "SE": {
+                "lat": 20.5444,
+                "lng": 144.8863
+            }
+        }
+    },
+    // トップメニュー一覧
+    "menu": [
+        {
+            "glot-model": "licence_title",
+            "linkto": "javascript:cMapmaker.licence()",
+            "divider": false
+        },
+        {
+            "glot-model": "about",
+            "linkto": "https://github.com/armd-02/openhc-map",
+            "divider": false
+        },
+        {
+            "glot-model": "owner",
+            "linkto": "https://github.com/K-Sakanoshita/community_mapmaker",
+            "divider": false
+        },
+        {
+            "glot-model": "openstreetmap",
+            "linkto": "https://www.openstreetmap.org/about",
+            "divider": false
+        }
+    ],
+    // 詳細表示のモーダル設定
+    "detail_menu": [
+        {
+            "glot-model": "act_add",
+            "linkto": "javascript:modal_activities.edit({form:'disaster'})",
+            "divider": false
+        },
+        {
+            "glot-model": "osm_open",
+            "linkto": "javascript:winCont.osm_open(location.search)",
+            "divider": false
+        },
+        {
+            "glot-model": "button_close",
+            "linkto": "javascript:winCont.modal_close()",
+            "divider": false
+        }
+    ],
+    "detail_view": {
+        // 詳細モーダルの一番上を開くかどうか
+        "openfirst": true,
+        // 詳細モーダルの追加ボタン 
+        "buttons": [
+            {
+                "btn_class": "btn btn-light",
+                "code": "javascript:modal_activities.edit({form:'disaster'})",
+                "icon_class": "fas fa-plus",
+                "btn_glot_name": "add_activity"
+            },
+            {
+                "btn_class": "btn btn-light",
+                "code": "javascript:cMapmaker.url_share()",
+                "icon_class": "fas fa-clone",
+                "btn_glot_name": "share_link"
+            }
+        ]
+    }
+}
