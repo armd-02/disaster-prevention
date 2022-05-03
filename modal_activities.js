@@ -45,12 +45,10 @@ class modal_Activities {
             clone.querySelector("span").innerHTML = act.title;
             let chtml = `<div class="float-right">${glot.get("update")} ${updated}[<a href="javascript:modal_activities.edit({id:'${act.id}',form:'${newmode}'})">${glot.get("act_edit")}</a>]</div>`;
             chtml += "<strong>" + glot.get("share_link") + ":</strong> ";
-            chtml += `
-            <button type="button" class="btn btn-warning pl-3 pr-3 pt-0 pb-0"
+            chtml += `<button type="button" class="btn btn-warning pl-3 pr-3 pt-0 pb-0"
              data-toggle="popover" data-content="${glot.get("modal_popover_copied")}" onclick="cMapmaker.url_share('${act.id}')">
                 <i class="fas fa-clone"></i>
-            </button><br><br>
-            <div class='row mb-1 align-items-center'>`;
+            </button><br><br>`;
             switch (newmode) {
                 case "libc":
                     glot_key = "libc";
@@ -77,36 +75,39 @@ class modal_Activities {
                 default:    // event
                     glot_key = newmode == "child" ? "children" : "activities";  // 
                     clone.querySelector("span").innerHTML = act.title;
+
                     Object.keys(form).forEach((key) => {
+                        chtml += `<div class='row'>`;
                         let gdata = act[form[key].gsheet];
                         switch (form[key].type) {
                             case "date":
-                                chtml += `<div class='col-2'>${glot.get(form[key].glot)}</div><div class='col-10'>${basic.formatDate(new Date(gdata), "YYYY/MM/DD")}</div>`;
+                                chtml += `<div class='col'>${glot.get(form[key].glot)}</div><div class='col-9'>${basic.formatDate(new Date(gdata), "YYYY/MM/DD")}</div>`;
                                 break;
                             case "select":
                             case "text":
                             case "textarea":
                             case "quiz_choice":
-                                if (key !== "quiz_answer" && key !== "title") chtml += `<div class='col-2'>${glot.get(form[key].glot)}</div><div class='col-10'>${gdata.replace(/\r?\n/g, '<br>')}</div>`;
+                                if (key !== "quiz_answer" && key !== "title") chtml += `<div class='col'>${glot.get(form[key].glot)}</div><div class='col-9'>${gdata.replace(/\r?\n/g, '<br>')}</div>`;
                                 break;
                             case "quiz_textarea":
-                                chtml += `<div class='col-2'>${glot.get(form[key].glot)}</div><div class='col-10'>${gdata.replace(/\r?\n/g, '<br>')}</div>`;
+                                chtml += `<div class='col'>${glot.get(form[key].glot)}</div><div class='col-9'>${gdata.replace(/\r?\n/g, '<br>')}</div>`;
                                 break;
                             case "url":
                                 if (gdata !== "http://" && gdata !== "https://" && gdata !== "") {
-                                    chtml += `<div class='col-2'>${glot.get(form[key].glot)}</div><div class='col-10'><a href="${gdata}">${gdata}</a></div>`;
+                                    chtml += `<div class='col'>${glot.get(form[key].glot)}</div><div class='col-9'><a href="${gdata}">${gdata}</a></div>`;
                                 };
                                 break;
                             case "image_url":
                                 if (gdata !== "http://" && gdata !== "https://" && gdata !== "") {
-                                    chtml += `<img class="col-12 w100 m-1" src="${gdata}"><br>`;
+                                    chtml += `<img class="col w100 m-1" src="${gdata}"><br>`;
                                 };
                                 break;
                         };
+                        chtml += "</div>";
                     });
                     break;
             };
-            chtml += "</div>";
+
             body.innerHTML = chtml;
             if (mode !== newmode) {
                 mode = newmode;
