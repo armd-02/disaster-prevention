@@ -52,6 +52,16 @@ class Leaflet {
 
     };
 
+    enable(flag){
+        if (flag) {
+            map.scrollWheelZoom.enable();
+            map.dragging.enable();
+        } else {
+            map.scrollWheelZoom.disable();
+            map.dragging.disable();
+        }
+    };
+
     start() {
         ["dragging", "touchZoom", "touchZoom"].forEach(key => map[key].enable());
         this.Control["maps"].addTo(map);

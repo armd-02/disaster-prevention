@@ -22,10 +22,14 @@
         "phone_minZoom": 5,
         "maxZoom": 21,
         "zoomSnap": 0.5,
-        "iconViewZoom": 13,
-        "act_iconViewZoom": 5,
+        "PoiLoadZoom": 14,
         "bookmark": true
     },
+    "PoiViewZoom": {
+        "disaster": 16,
+        "tree": 14
+    },
+    "act_PoiViewZoom": 14,
     "targets": [
         "disaster",
         "tree"

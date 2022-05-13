@@ -24,7 +24,7 @@
             "tags": [
                 "shop=*"
             ],
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]

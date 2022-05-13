@@ -2,7 +2,7 @@
     "osm": {
         "*": {
             "tags": [],
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -25,9 +25,10 @@
                 "stroke":"#A06060",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
-                "operator"
+                "operator",
+                "note"
             ]
         },
         "pub": {
@@ -44,7 +45,7 @@
                 "stroke":"#808080",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -63,7 +64,7 @@
                 "stroke":"#705050",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -80,7 +81,7 @@
                 "stroke":"#507070",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -100,7 +101,7 @@
                 "stroke":"#508050",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -116,7 +117,7 @@
                 "stroke":"#509050",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -144,7 +145,7 @@
                 "stroke":"#705070",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -164,7 +165,7 @@
                 "stroke":"#505070",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -182,7 +183,7 @@
                 "stroke":"#404040",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -200,7 +201,7 @@
                 "stroke":"#606090",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -218,7 +219,7 @@
                 "stroke":"#606090",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -236,7 +237,7 @@
                 "stroke":"#606060",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -253,7 +254,7 @@
                 "stroke":"#606060",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -270,7 +271,7 @@
                 "stroke":"#705070",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -287,7 +288,7 @@
                 "stroke":"#505070",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -320,7 +321,7 @@
                 "stroke":"#508050",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -344,7 +345,7 @@
                 "stroke":"#508050",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -361,7 +362,7 @@
                 "stroke":"#808080",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -378,7 +379,7 @@
                 "stroke":"#505050",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name"
             ]
         },
@@ -394,7 +395,7 @@
                 "stroke":"#606060",
                 "stroke-width":0
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -413,7 +414,7 @@
                 "stroke":"#505080",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "religion"
             ]
@@ -430,7 +431,7 @@
                 "stroke":"#7d7d7d",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "religion"
             ]
@@ -447,7 +448,7 @@
                 "stroke":"#7d7d7d",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -467,7 +468,7 @@
                 "stroke":"#7d7d7d",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -485,7 +486,7 @@
                 "stroke":"#404080",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -502,7 +503,7 @@
                 "stroke":"#7d7d7d",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -519,7 +520,7 @@
                 "stroke":"#805050",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -536,7 +537,7 @@
                 "stroke":"#805050",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -559,7 +560,7 @@
                 "stroke":"#7d7d7d",
                 "stroke-width":1
             },
-            "views": [
+            "titles": [
                 "name",
                 "operator"
             ]
@@ -582,7 +583,7 @@
                 "stroke":"#7070C0",
                 "stroke-width":1
             },           
-            "views": [
+            "titles": [
                 "name"
             ]
         }

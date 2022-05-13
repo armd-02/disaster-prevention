@@ -5,6 +5,7 @@ class CMapMaker {
 		this.detail = false;				// detail_view表示中はtrue
 		this.open_osmid = "";
 		this.last_modetime = 0;
+		this.mode = "map";
 	};
 
 	init(basehtml) {	// Initialize
@@ -23,8 +24,8 @@ class CMapMaker {
 			if (!Conf.listTable.playback.view) list_playback_control.style.display = "none";	// playback control view:true/false
 
 			// mouse hover event(baselist mouse scroll)
-			baselist.addEventListener("mouseover", () => { map.scrollWheelZoom.disable(); map.dragging.disable() }, false);
-			baselist.addEventListener("mouseleave", () => { map.scrollWheelZoom.enable(); map.dragging.enable() }, false);
+			baselist.addEventListener("mouseover", () => { console.log("mouseover"); map.scrollWheelZoom.disable(); map.dragging.disable() }, false);
+			baselist.addEventListener("mouseleave", () => { console.log("mousleave"); map.scrollWheelZoom.enable(); map.dragging.enable() }, false);
 
 			poiCont.set_actjson(results[0]);
 			winCont.window_resize();
@@ -86,14 +87,15 @@ class CMapMaker {
 		winCont.modal_open({ "title": msg.ttl, "message": msg.msg, "mode": "close", callback_close: winCont.modal_close, "menu": false });
 	}
 
-	mode_change(mode) {	// mode change(list or map)
+	mode_change(newmode) {	// mode change(list or map)
 		if (this.status !== "mode_change" && (this.last_modetime + 300) < Date.now()) {
 			this.status = "mode_change";
 			let params = { 'map': ['down', 'remove', 'start'], 'list': ['up', 'add', 'stop'] };
-			mode = !mode ? (list_collapse.classList.contains('show') ? 'map' : 'list') : mode;
-			console.log('mode_change: ' + mode + ' : ' + this.last_modetime + " : " + Date.now());
-			list_collapse_icon.className = 'fas fa-chevron-' + params[mode][0];
-			list_collapse.classList[params[mode][1]]('show');
+			this.mode = !newmode ? (list_collapse.classList.contains('show') ? 'map' : 'list') : newmode;
+			console.log('mode_change: ' + this.mode + ' : ' + this.last_modetime + " : " + Date.now());
+			leaflet.enable(this.mode == "map");
+			list_collapse_icon.className = 'fas fa-chevron-' + params[this.mode][0];
+			list_collapse.classList[params[this.mode][1]]('show');
 			this.last_modetime = Date.now();
 			this.status = "normal";
 			mapid.focus();
@@ -103,10 +105,15 @@ class CMapMaker {
 	poi_view(targets) {		// Poiを表示させる
 		console.log("cMapmaker: PoiView");
 		targets = targets[0] == "-" ? Conf.targets : targets;	// '-'はすべて表示
-		let poiview = map.getZoom() >= Conf.default.iconViewZoom ? true : false;
-		let actonly = (map.getZoom() >= Conf.default.act_iconViewZoom && poiview == false) ? true : false;
 		poiMarker.all_clear();
-		if (poiview) targets.forEach(key => poiMarker.set(key, actonly));
+		targets.forEach((target) => {
+			// targetがPoiViewZoom範囲に含まれた or アクティビティならPOI表示
+			if (map.getZoom() >= Conf.PoiViewZoom[target]) {
+				poiMarker.set(target, false);
+			} else if (map.getZoom() >= Conf.act_PoiViewZoom) {
+				poiMarker.set(target, true);
+			}
+		});
 	}
 
 	poi_get(targets) {		// OSMとGoogle SpreadSheetからPoiを取得してリスト化
@@ -114,7 +121,7 @@ class CMapMaker {
 			console.log("cMapmaker: PoiGet start");
 			winCont.spinner(true);
 			var keys = (targets !== undefined && targets !== "") ? targets : Object.values(Conf.targets);
-			if ((map.getZoom() < Conf.default.iconViewZoom) && !Conf.static.mode) {
+			if ((map.getZoom() < Conf.default.PoiLoadZoom) && !Conf.static.mode) {
 				winCont.spinner(false);
 				console.log("cMapmaker: poi_get end(more zoom).");
 				resolve({ "update": true });
@@ -165,12 +172,13 @@ class CMapMaker {
 		let target = osmobj == undefined ? "*" : osmobj.targets[0];
 		let category = poiCont.get_catname(tags);
 		let title = "", message = "";
-		for (let i = 0; i < Conf.osm[target].views.length; i++) {
-			if (tags[Conf.osm[target].views[i]] !== void 0) {
-				title = `<img src="./${Conf.icon.path}/${poiMarker.get_icon(tags)}">${tags[Conf.osm[target].views[i]]}`;
+
+		for (let i = 0; i < Conf.osm[target].titles.length; i++) {
+			if (tags[Conf.osm[target].titles[i]] !== void 0) {
+				title = `<img src="./${Conf.icon.path}/${poiMarker.get_icon(tags)}">${tags[Conf.osm[target].titles[i]]}`;
 				break;
-			}
-		}
+			};
+		};
 		if (title == "") title = category[0];
 		if (title == "") title = glot.get("undefined");
 		winCont.menu_make(Conf.detail_menu, "modal_menu");
@@ -258,11 +266,11 @@ class CMapMaker {
 		let csv = "", link;
 		Conf.listTable.targets.forEach(target => { csv += basic.makeArray2CSV(poiCont.list(target)) });
 		let bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-		let blob = new Blob([ bom, csv ], { 'type' : 'text/csv' });
+		let blob = new Blob([bom, csv], { 'type': 'text/csv' });
 
 		link = document.getElementById(linkid) ? document.getElementById(linkid) : document.createElement("a");
 		link.id = linkid;
-		link.href= URL.createObjectURL(blob);
+		link.href = URL.createObjectURL(blob);
 		link.download = "my_data.csv";
 		link.dataset.downloadurl = ['text/plain', link.download, link.href].join(':');
 		document.body.appendChild(link);
@@ -317,7 +325,7 @@ class cMapEvents {
 						};
 					}
 					listTable.make();					// view all list
-					listTable.make_category(Conf.listTable.targets);
+					//listTable.make_category(Conf.listTable.targets);
 					resolve();
 				} else {
 					cmap_events.#map_move_promise(resolve, reject);	// 失敗時はリトライ(接続先はoverpass.jsで変更)
@@ -331,9 +339,12 @@ class cMapEvents {
 	}
 
 	map_zoom() {				// View Zoom Level & Status Comment
-		let nowzoom = map.getZoom();
+		let poizoom = false;
+		for (let [key, value] of Object.entries(Conf.PoiViewZoom)) {
+			if (map.getZoom() >= value) poizoom = true;
+		}
 		let message = `${glot.get("zoomlevel")}${map.getZoom()} `;
-		if (nowzoom < Conf.default.iconViewZoom) message += `<br>${glot.get("morezoom")}`;
+		if (!poizoom) message += `<br>${glot.get("morezoom")}`;
 		$("#zoomlevel").html("<h2 class='zoom'>" + message + "</h2>");
 	};
 
@@ -354,8 +365,7 @@ class cMapEvents {
 		cMapmaker.poi_view(targets);	// in targets
 		let catname = list_category.value !== "-" ? `?category=${list_category.value}` : "";
 		history.replaceState('', '', location.pathname + catname + location.hash);
-		list_category.blur();
-		mapid.focus();
+		leaflet.enable(cMapmaker.mode == "map");
 	};
 }
 var cmap_events = new cMapEvents();

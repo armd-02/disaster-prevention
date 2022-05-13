@@ -23,7 +23,25 @@ class modal_OSMbasic {
             html += `<div class="flex-row"> <i class="fas fa-phone-alt"></i> ${tags.phone}</div>`;
             elements++;
         };
-        
+
+        // write artist_name
+        if (tags.artist_name !== undefined) {
+            html += `<div class="flex-row"> <i class="fas fa-file-signature"></i> ${tags.artist_name}</div>`;
+            elements++;
+        };
+
+        // write note
+        if (tags.note !== undefined) {
+            html += `<div class="flex-row"> <i class="fas fa-sticky-note"></i> ${tags.note}</div>`;
+            elements++;
+        };
+
+        // write description
+        if (tags.description !== undefined) {
+            html += `<div class="flex-row"> <i class="fas fa-sticky-note"></i> ${tags.description}</div>`;
+            elements++;
+        };
+
         return elements > 0 ? html + "</div>" : "";
     };
 }

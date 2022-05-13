@@ -251,7 +251,7 @@ class poiMarker {
 	static select(poiid, detail) {								// Map move to PoiId & Zoom(config)
 		return new Promise((resolve, reject) => {
 			let poi = poiCont.get_osmid(poiid);
-			let zoomlv = Conf.default.act_iconViewZoom >= map.getZoom() ? Conf.default.act_iconViewZoom : map.getZoom();
+			let zoomlv = Conf.act_PoiViewZoom >= map.getZoom() ? Conf.act_PoiViewZoom : map.getZoom();
 			if (poi !== undefined) {	// poi = osmid
 				map.flyTo(poi.latlng, zoomlv, { animate: true, duration: 0.5 });
 				if (detail) cMapmaker.detail_view(poi.geojson.id, poiid);
@@ -380,10 +380,11 @@ class listTable {
 					};
 					break;
 				default:			// タグからカテゴリを表示
-					pois = listTable.list.map(data => { return data[2] });
-					pois = pois.filter((x, i, self) => { return self.indexOf(x) === i });
-					pois.map(poi => {
-						winCont.select_add(`list_category`, poi, poi)
+					pois = listTable.list.map(data => { return [data[2], data[4] == undefined ? "" : data[4][0]] });
+					pois = [...new Set(pois.map(JSON.stringify))].map(JSON.parse);
+					//pois = pois.filter((x, i, self) => { return self.indexOf(x) === i });	//
+					pois.sort().map(poi => {
+						winCont.select_add(`list_category`, poi[0], poi[1])
 						listTable.categorys.push(poi);
 					});
 					break;
