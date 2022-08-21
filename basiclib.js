@@ -101,7 +101,7 @@ class Basic {
     //二次元配列 -> CSV形式の文字列に変換
     makeArray2CSV(arr, col = ',', row = '\n') {
         const escape = (s) => { return `"${s.replace(/\"/g, '\"\"')}"` };
-        return arr.map((row) => row.map((cell) => escape(cell)).join(col)).join(row);
+        return arr.map((row) => row.map((cell) => escape(Array.isArray(cell) ? cell.join("//") : cell)).join(col)).join(row);
     }
 
 };

@@ -11,7 +11,6 @@ header {
     margin: 0px !important;
     padding: 0px !important;
     color: #ffffff !important;
-    background-image: url('./image/bg1.png');
     background-size: inherit;
 }
 
@@ -24,12 +23,13 @@ body {
     overflow: hidden;
 }
 
-h5 {
-    font-size: 1.1em !important;
-}
-
 h4 {
     font-size: 1.3em !important;
+}
+
+h5 {
+    font-size: 1.2em !important;
+    font-weight: bold;
 }
 
 /* body dom */
@@ -54,6 +54,24 @@ h4 {
 
 #mapid {
     height: 100%;
+}
+
+/* list */
+ul {
+    column-count: 3;
+    list-style-type: none;
+}
+
+li::before {
+    position: relative;
+    top: -2px;
+    left: -12px;
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    content: '';
+    border-radius: 100%;
+    background: green;
 }
 
 /* fade out */
@@ -123,8 +141,16 @@ h2.zoom {
     height: 100%;
 }
 
+.pointer{
+    cursor: pointer;
+}
+
 p {
     line-height: 1.5;
+}
+
+span {
+    font-size: 1rem;
 }
 
 span.title {
@@ -144,11 +170,33 @@ span.subtitle {
 }
 
 span.icon {
+    border-radius: 8px;
     margin-left: 2px;
     padding: 0px 2px;
     white-space: nowrap;
-    background-color: white;
-    background: rgba(255, 255, 255, 0.5);
+}
+
+span.icon_normal {
+    color: #ffffffee;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+span.icon_attention {
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+/* マーカーのフォントサイズ選択 */
+span.fs-10{
+    font-size: 10px;
+}
+
+span.fs-12{
+    font-size: 12px;
+}
+
+span.fs-14{
+    font-size: 14px;
 }
 
 /* button for select way color */

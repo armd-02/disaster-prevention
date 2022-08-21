@@ -22,36 +22,30 @@ class modal_Activities {
         xhr.send();
     };
 
-    make(actlists, openid) {
+    make(actlists) {
         let ymd = "YYYY/MM/DD";
         let tModal = document.createElement("div");
         let template = document.createElement("div");
-        let result = "", mode = "", newmode = "", glot_key = "";
+        let result = "", newmode = "";
         template.innerHTML = this.html;
         actlists.sort((a, b) => { return a.updatetime > b.updatetime ? -1 : 1 });   // sort by update.
+        result = modal_activities.make_activity_list(actlists);
         actlists.forEach((act, idx) => {
             let clone = template.querySelector("div.body").cloneNode(true);
             let head = clone.querySelector("h5");
-            let body = clone.querySelector("div.card-body");
+            let body = clone.querySelector("div.p-1");
             let updated = basic.formatDate(new Date(act.updatetime), ymd);
-            let openflag = (act.id == openid) || (!openid && idx == 0 && Conf.detail_view.openfirst) ? true : false;
             newmode = act.id.split('/')[0];
             let form = Conf.activities[newmode].form;
-            clone.querySelector("div.collapse").id = "collapse" + idx;
-            head.setAttribute("data-target", "#collapse" + idx);
-            head.setAttribute("aria-expanded", openflag ? "true" : "false");
-            if (openflag && openid !== undefined) head.setAttribute("id", "modal_" + openid);
-            clone.querySelector("#collapse" + idx).classList[openflag ? "add" : "remove"]("show");
-            clone.querySelector("span").innerHTML = act.title;
+            head.innerHTML = act.title;
+            head.setAttribute("id", act.id.replace("/", ""));
             let chtml = `<div class="float-right">${glot.get("update")} ${updated}[<a href="javascript:modal_activities.edit({id:'${act.id}',form:'${newmode}'})">${glot.get("act_edit")}</a>]</div>`;
-            chtml += "<strong>" + glot.get("share_link") + ":</strong> ";
-            chtml += `<button type="button" class="btn btn-warning pl-3 pr-3 pt-0 pb-0"
+            chtml += glot.get("share_link") + `<button type="button" class="btn-sm btn-light ml-1 pl-2 pr-2 pt-0 pb-0"
              data-toggle="popover" data-content="${glot.get("modal_popover_copied")}" onclick="cMapmaker.url_share('${act.id}')">
                 <i class="fas fa-clone"></i>
             </button><br><br>`;
             switch (newmode) {
                 case "libc":
-                    glot_key = "libc";
                     let mm = !parseInt(act.mm) ? "--" : ("00" + act.mm).substr(-2);
                     let dd = !parseInt(act.dd) ? "--" : ("00" + act.dd).substr(-2);
                     let act_ymd = `${act.yyyy}/${mm}/${dd}`;
@@ -63,8 +57,7 @@ class modal_Activities {
                     chtml += "<strong>" + glot.get("libc_ymd") + `</strong><br>${act_ymd}<br><br>`;
                     break;
                 case "memorial":
-                    glot_key = "memories";
-                    chtml += "<strong>" + glot.get("memories_title") + "</strong><br>" + act.title + "<br><br>";
+                    chtml += "<strong>" + glot.get("title") + "</strong><br>" + act.title + "<br><br>";
                     chtml += "<strong>" + glot.get("memories_author") + "</strong><br>" + act.author + "<br><br>";
                     chtml += "<strong>" + glot.get("memories_memorial") + "</strong><br>" + act.body.replace(/\r?\n/g, '<br>') + "<br><br>";
                     chtml += "<strong>" + glot.get("memories_place") + "</strong><br>" + act.place + "<br><br>";
@@ -73,12 +66,11 @@ class modal_Activities {
                     chtml += "<strong>" + glot.get("memories_reception") + "</strong><br>" + basic.formatDate(new Date(act.reception), ymd) + "<br><br>";
                     break;
                 default:    // event
-                    glot_key = newmode == "child" ? "children" : "activities";  // 
-                    clone.querySelector("span").innerHTML = act.title;
+                    head.innerHTML = act.title;
 
                     Object.keys(form).forEach((key) => {
                         chtml += `<div class='row'>`;
-                        let gdata = act[form[key].gsheet];
+                        let gdata = act[form[key].gsheet] == undefined ? "" : String(act[form[key].gsheet]);
                         switch (form[key].type) {
                             case "date":
                                 chtml += `<div class='col'>${glot.get(form[key].glot)}</div><div class='col-9'>${basic.formatDate(new Date(gdata), "YYYY/MM/DD")}</div>`;
@@ -109,17 +101,22 @@ class modal_Activities {
             };
 
             body.innerHTML = chtml;
-            if (mode !== newmode) {
-                mode = newmode;
-                result += `<h5>${glot.get(glot_key)}</h5>` + clone.innerHTML;
-            } else {
-                result += clone.innerHTML;
-            }
+            result += clone.outerHTML;
         });
         tModal.remove();
         template.remove();
         return result;
     };
+
+    // make activity list
+    make_activity_list(actlists) {
+        let html = "<ul class='ml-0 pl-4'>";
+        for (let act of actlists) {
+            console.log("modal_Activities: " + act.id);
+            html += `<li><span class="pointer" onclick="document.getElementById('${act.id.replace('/', '')}').scrollIntoView({behavior: 'smooth'})">${act.title}<span></li>`;
+        }
+        return html + "</ul>";
+    }
 
     // edit activity
     edit(params) {			// p {id: undefined時はnew}
@@ -208,7 +205,7 @@ class modal_Activities {
                             gSheet.get(Conf.google.AppScript).then(jsonp => {
                                 poiCont.set_actjson(jsonp);
                                 let targets = (Conf.listTable.targets.indexOf("targets") > -1) ? [list_category.value] : ["-"];
-                                cMapmaker.poi_view(targets);	// in targets
+                                cMapmaker.view_poi(targets);	// in targets
                                 modal_activities.busy = false;
                             });
                         } else {
@@ -216,9 +213,9 @@ class modal_Activities {
                             alert(glot.get("act_error"));
                             modal_activities.busy = false;
                         }
-                    }).catch(() => {
-                        winCont.modal_progress(0);
-                        modal_activities.busy = false;
+                        //}).catch(() => {
+                        //    winCont.modal_progress(0);
+                        //    modal_activities.busy = false;
                     });
                 } else if (userid == "" || passwd == "") {
                     alert(glot.get("act_error"));

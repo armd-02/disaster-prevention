@@ -1,163 +1,185 @@
 "use strict";
 
 // PoiData Control
-var poiCont = (function () {
-	var pdata = { geojson: [], targets: [], enable: [] };					//poi data variable
-	var adata = [], latlngs = {}, geoidx = {};								//act data variable /  poi's latlng & geoidx
+class poiCont {
+	static pdata = { geojson: [], targets: [], enable: [] };					//poi data variable
+	static adata = [];															//act data variable /  poi's latlng & geoidx
+	static latlngs = {};
+	static geoidx = {};
 
-	return {
-		pois: () => { return { pois: pdata, acts: adata, latlngs: latlngs } },
-		targets: () => {													// return all targets
-			let target = [];
-			pdata.targets.forEach(names => target = target.concat(names));	// poisのtarget集計
-			if (adata.length > 0) target.concat(Conf.google.targetName);
-			return basic.uniq(target);
-		},
-		all_clear: () => { pdata = { geojson: [], targets: [], enable: [] } },
-		set_actjson: (json) => { adata = json; },			// set GoogleSpreadSheetから帰ってきたJson
-		add_geojson: (pois) => {      						// add geojson pois / pois: {geojson: [],targets: []}
-			if (pois.enable == undefined) pois.enable = [];
-			pois.geojson.forEach((val1, idx1) => {			// 既存Poiに追加
-				let enable = pois.enable[idx1] == undefined ? true : pois.enable[idx1];
-				let poi = { "geojson": pois.geojson[idx1], "targets": pois.targets[idx1], "enable": enable };
-				poiCont.set_geojson(poi);
-			});
-			pdata.geojson.forEach((node, node_idx) => {
-				if (latlngs[node.id] == undefined) {
-					let ll = GeoCont.flat2single(node.geometry.coordinates, node.geometry.type);
-					latlngs[node.id] = [ll[1], ll[0]];
-					geoidx[node.id] = node_idx;
-					if (node.geometry.type !== "Point") {
-						let targets = pdata.targets[node_idx];
-						let exp = Conf.osm[targets[0]].expression;
-						node.properties.stroke = exp.stroke;
-						node.properties["stroke-width"] = exp["stroke-width"];
-						node.properties.fill = exp.stroke;
-						node.properties["fill-opacity"] = 0.3;
-						leaflet.geojsonAdd(node);
-					};
-				};
-			});
-		},
-		set_geojson: (poi) => {								// add_geojsonのサブ機能
-			let cidx = pdata.geojson.findIndex((val) => val.id == poi.geojson.id);
-			if (cidx === -1) {       	                   	// 無い時は追加
-				pdata.geojson.push(poi.geojson);
-				cidx = pdata.geojson.length - 1;
-			};
-			if (pdata.targets[cidx] == undefined) {  		// targetが無い時は追加
-				pdata.targets[cidx] = poi.targets;
-			} else {
-				pdata.targets[cidx] = Object.assign(pdata.targets[cidx], poi.targets);
-			};
-			if (poi.enable !== undefined) pdata.enable[cidx] = poi.enable;
-		},
-		get_osmid: (osmid) => {           								// osmidを元にgeojsonと緯度経度、targetを返す
-			let idx = geoidx[osmid];
-			return idx == undefined ? undefined : { geojson: pdata.geojson[idx], latlng: latlngs[osmid], targets: pdata.targets[idx], enable: pdata.enable[idx] };
-		},
-		get_actid: (actid) => {
-			let act = adata.filter(line => actid == line.id);
-			return act == undefined ? undefined : act[0];
-		},
-		get_actlist: (osmid) => {		// get activities by osmid
-			return adata.filter(a => a.osmid == osmid);
-		},
-		get_catname: (tags) => {          								// get Category Name from Conf.category(Global Variable)
-			let catname = "", subcatname = "", mainkey = "", mainval = "";
-			mainkey = Conf.category_keys.find(key => (tags[key] !== undefined) && key !== "*");
-			mainkey = mainkey == undefined ? "*" : mainkey;
-			mainval = tags[mainkey] == undefined ? "*" : tags[mainkey];
-			catname = (mainval !== "*") ? Conf.category[mainkey][mainval] : "-";		// known tags
-			catname = (catname !== undefined) ? catname : "-";
-			let subtag = Conf.category_sub[mainval];									// ex: subtag = {"religion": {"shinto":"a.svg","buddhist":"b.svg"}}
-			if (subtag !== undefined) {
-				for (let subkey of Object.keys(subtag)) {								// subkey: ex: religion
-					if (subcatname !== "") break;
-					for (let subval of Object.keys(subtag[subkey])) { 					// subval: ex: shinto
-						subcatname = (tags[subkey] == subval) ? subtag[subkey][subval] : "";
-						if (subcatname !== "") break;
-					};
-				};
-			};
-			if (catname == "-") console.log("get_catname: no key: " + mainkey + "," + mainval + " / " + tags.id);
-			return [catname, subcatname];
-		},
-		get_wikiname: (tags) => {          								// get Wikipedia Name from tag
-			let wikiname = tags["wikipedia"] ? tags["wikipedia"].split(':')[1] : "";	// value値の":"の右側を返す
-			return wikiname;
-		},
-		get_target: (targets) => {										// 指定したtargetのpoisとactsを返す
-			let pois = filter_geojson(targets);
-			return { "pois": pois, "acts": targets.indexOf(Conf.google.targetName) > -1 ? adata : [] };
-		},
-		list: function (targets) {              						// Grid.js向きの配列を出力
-			let pois = filter_geojson(targets), datas = []; 			// targetsに指定されたpoiのみフィルター
-			for (const [idx, node] of pois.geojson.entries()) {
-				let tags = node.properties, data = [];
-				Conf.list.columns.poi_fields.forEach(key => {
-					if (key == "#category") {							// #は内部データを利用する意味
-						let names = poiCont.get_catname(tags);
-						if (names[1] !== "") names[0] = `${names[0]}(${names[1]})`;
-						data.push(names[0]);		// category追加
-					} else {
-						data.push(tags[key] == undefined ? "-" : tags[key]);	// osmtag追加
-					};
-				});
-				data.push(pois.targets[idx]);									// listの最後にtargetを追加
-				datas.push(data);
-			};
-			if (targets.indexOf(Conf.google.targetName) > -1) {			// targetsにgooglesheet名があればリストに追加
-				adata.forEach((line) => {
-					if (line !== undefined) {
-						let newmode = line.id.split('/')[0];
-						switch (newmode) {
-							case "libc":
-								let mm = !parseInt(line.mm) ? "--" : ("00" + line.mm).substr(-2);
-								let dd = !parseInt(line.dd) ? "--" : ("00" + line.dd).substr(-2);
-								datas.push([line.id, `${line.yyyy}/${mm}/${dd}`, line.category, line.title]);
-								break;
-							default:
-								let data = [];
-								Conf.list.columns.act_fields.forEach(key => {
-									if (key.indexOf("datetime") > -1) {							// フィール名に日時を含む場合
-										data.push(basic.formatDate(new Date(line.updatetime), "YYYY/MM/DD"));
-									} else {
-										data.push(line[key] == undefined ? "-" : line[key]);	// gsheet追加
-									}
-								});
-								datas.push(data);
-								break;
-						};
-					};
-				});
-			};
-			datas.sort((a, b) => { return (a[0] > b[0]) ? 1 : -1 });
-			return datas;
-		}
+	static pois() { return { pois: poiCont.pdata, acts: poiCont.adata, latlngs: poiCont.latlngs } };
+
+	static targets() {													// return all targets
+		let target = [];
+		poiCont.pdata.targets.forEach(names => target = target.concat(names));	// poisのtarget集計
+		if (poiCont.adata.length > 0) target.concat(Conf.google.targetName);
+		return basic.uniq(target);
 	};
-	function filter_geojson(targets) {
+
+	static all_clear() { poiCont.pdata = { geojson: [], targets: [], enable: [] } };
+	static set_actjson(json) { poiCont.adata = json };			// set GoogleSpreadSheetから帰ってきたJson
+	static add_geojson(pois) {		// add geojson pois / pois: {geojson: [],targets: []}
+		if (pois.enable == undefined) pois.enable = [];
+		pois.geojson.forEach((val1, idx1) => {			// 既存Poiに追加
+			let enable = pois.enable[idx1] == undefined ? true : pois.enable[idx1];
+			let poi = { "geojson": pois.geojson[idx1], "targets": pois.targets[idx1], "enable": enable };
+			poiCont.set_geojson(poi);
+		});
+		poiCont.pdata.geojson.forEach((node, node_idx) => {
+			if (poiCont.latlngs[node.id] == undefined) {
+				let ll = GeoCont.flat2single(node.geometry.coordinates, node.geometry.type);
+				poiCont.latlngs[node.id] = [ll[1], ll[0]];
+				poiCont.geoidx[node.id] = node_idx;
+				if (node.geometry.type !== "Point") {
+					let targets = poiCont.pdata.targets[node_idx];
+					let exp = Conf.osm[targets[0]].expression;
+					node.properties.stroke = exp.stroke;
+					node.properties["stroke-width"] = exp["stroke-width"];
+					node.properties.fill = exp.stroke;
+					node.properties["fill-opacity"] = 0.3;
+					leaflet.geojsonAdd(node);
+				};
+			};
+		});
+	};
+
+	static set_geojson(poi) {								// add_geojsonのサブ機能
+		let cidx = poiCont.pdata.geojson.findIndex((val) => val.id == poi.geojson.id);
+		if (cidx === -1) {       	                   	// 無い時は追加
+			poiCont.pdata.geojson.push(poi.geojson);
+			cidx = poiCont.pdata.geojson.length - 1;
+		};
+		if (poiCont.pdata.targets[cidx] == undefined) {  		// targetが無い時は追加
+			poiCont.pdata.targets[cidx] = poi.targets;
+		} else {
+			poiCont.pdata.targets[cidx] = Object.assign(poiCont.pdata.targets[cidx], poi.targets);
+		};
+		if (poi.enable !== undefined) poiCont.pdata.enable[cidx] = poi.enable;
+	};
+
+	static get_osmid(osmid) {           								// osmidを元にgeojsonと緯度経度、targetを返す
+		let idx = poiCont.geoidx[osmid];
+		return idx == undefined ? undefined : { geojson: poiCont.pdata.geojson[idx], latlng: poiCont.latlngs[osmid], targets: poiCont.pdata.targets[idx], enable: poiCont.pdata.enable[idx] };
+	};
+
+	static get_actid(actid) {
+		let act = poiCont.adata.filter(line => actid == line.id);
+		return act == undefined ? undefined : act[0];
+	};
+	static get_actlist(osmid) {		// get activities by osmid
+		return poiCont.adata.filter(a => a.osmid == osmid);
+	};
+
+	static get_catname(tags) {          								// get Category Name from Conf.category(Global Variable)
+		let catname = "", subcatname = "", mainkey = "", mainval = "";
+		mainkey = Conf.category_keys.find(key => (tags[key] !== undefined) && key !== "*");
+		mainkey = mainkey == undefined ? "*" : mainkey;
+		mainval = tags[mainkey] == undefined ? "*" : tags[mainkey];
+		catname = (mainval !== "*") ? Conf.category[mainkey][mainval] : "-";		// known tags
+		catname = (catname !== undefined) ? catname : "-";
+		let subtag = Conf.category_sub[mainval];									// ex: subtag = {"religion": {"shinto":"a.svg","buddhist":"b.svg"}}
+		if (subtag !== undefined) {
+			for (let subkey of Object.keys(subtag)) {								// subkey: ex: religion
+				if (subcatname !== "") break;
+				for (let subval of Object.keys(subtag[subkey])) { 					// subval: ex: shinto
+					subcatname = (tags[subkey] == subval) ? subtag[subkey][subval] : "";
+					if (subcatname !== "") break;
+				};
+			};
+		};
+		if (catname == "-") console.log("poiMarker: get_catname: no key: " + mainkey + "," + mainval + " / " + tags.id);
+		return [catname, subcatname];
+	};
+
+	static get_wikiname(tags) {          									// get Wikipedia Name from tag
+		let wikiname = tags["wikipedia"] ? tags["wikipedia"].split(':')[1] : "";	// value値の":"の右側を返す
+		return wikiname;
+	};
+
+	static get_target(target) {											// 指定したtargetのpoisとactsを返す
+		let pois = poiCont.#filter_geojson(target);
+		let acts = [];
+		switch (target) {
+			case "":
+			case "activity":
+				acts = poiCont.adata;
+				break;
+			default:
+				acts = poiCont.adata.filter(a => { return a.category == target })
+				break;
+		};
+		return { "pois": pois, "acts": acts };
+	};
+
+	static list(targets) {              									// Grid.js向きの配列を出力
+		let pois = poiCont.#filter_geojson(targets), datas = []; 			// targetsに指定されたpoiのみフィルター
+		for (const [idx, node] of pois.geojson.entries()) {
+			let tags = node.properties, data = [];
+			Conf.list.columns.poi_fields.forEach(key => {
+				if (key == "#category") {									// #は内部データを利用する意味
+					let names = poiCont.get_catname(tags);
+					if (names[1] !== "") names[0] = `${names[0]}(${names[1]})`;
+					data.push(names[0]);		// category追加
+				} else {
+					data.push(tags[key] == undefined ? "-" : tags[key]);	// osmtag追加
+				};
+			});
+			data.push(pois.targets[idx]);									// listの最後にtargetを追加
+			datas.push(data);
+		};
+		if (targets.indexOf(Conf.google.targetName) > -1) {			// targetsにgooglesheet名があればリストに追加
+			poiCont.adata.forEach((line) => {
+				if (line !== undefined) {
+					let newmode = line.id.split('/')[0];
+					switch (newmode) {
+						case "libc":
+							let mm = !parseInt(line.mm) ? "--" : ("00" + line.mm).substr(-2);
+							let dd = !parseInt(line.dd) ? "--" : ("00" + line.dd).substr(-2);
+							datas.push([line.id, `${line.yyyy}/${mm}/${dd}`, line.category, line.title]);
+							break;
+						default:
+							let data = [];
+							Conf.list.columns.act_fields.forEach(key => {
+								if (key.indexOf("datetime") > -1) {							// フィール名に日時を含む場合
+									data.push(basic.formatDate(new Date(line.updatetime), "YYYY/MM/DD"));
+								} else {
+									data.push(line[key] == undefined ? "-" : line[key]);	// gsheet追加
+								}
+							});
+							datas.push(data);
+							break;
+					};
+				};
+			});
+		};
+		datas.sort((a, b) => { return (a[0] > b[0]) ? 1 : -1 });
+		return datas;
+	}
+
+	static #filter_geojson(targets) {
 		let tars = [], enas = [], lls = [];
-		let geojson = pdata.geojson.filter((geojson_val, geojson_idx) => {
+		let geojson = poiCont.pdata.geojson.filter((geojson_val, geojson_idx) => {
 			let found = false;
-			for (let target_idx in pdata.targets[geojson_idx]) {
-				if (targets.includes(pdata.targets[geojson_idx][target_idx])) {
-					tars.push(pdata.targets[geojson_idx]);
-					lls.push(latlngs[geojson_val.id]);
-					enas.push(pdata.enable[geojson_idx]);
+			for (let target_idx in poiCont.pdata.targets[geojson_idx]) {
+				if (targets.includes(poiCont.pdata.targets[geojson_idx][target_idx])) {
+					tars.push(poiCont.pdata.targets[geojson_idx]);
+					lls.push(poiCont.latlngs[geojson_val.id]);
+					enas.push(poiCont.pdata.enable[geojson_idx]);
 					found = true;
 					break;
 				};
-			};
+			}
 			return found;
 		});
 		return { geojson: geojson, latlng: lls, targets: tars, enable: enas };
-	};
-})();
+	}
+
+}
 
 class poiMarker {
 
 	static markers = {};
+	static osmpois = [];		// アイコン表示させたOSMIDリスト
 
 	static get_icon(tags) {		// get icon filename
 		let mainico = "", subicon = "", mainkey = "", mainval = "";
@@ -178,7 +200,7 @@ class poiMarker {
 		};
 		mainico = subicon !== "" ? subicon : mainico;
 		return mainico == "" ? Conf.marker.tag['*']['*'] : mainico;
-	};
+	}
 
 	static set(target, actonly) {					// Poi表示(actonly:true時はGSheetデータが無いと非表示)
 
@@ -186,6 +208,7 @@ class poiMarker {
 			return new Promise((resolve, reject) => {
 				let tags = params.poi.geojson.properties.tags == undefined ? params.poi.geojson.properties : params.poi.geojson.properties.tags;
 				let name = tags[params.langname] == undefined ? tags.name : tags[params.langname];
+				name = tags["bridge:name"] == undefined ? name : tags["bridge:name"];	// 橋の名称があれば優先
 				name = (name == "" || name == undefined) ? "" : name;
 				let actlists = poiCont.get_actlist(params.poi.geojson.id);
 				let size, html = `<div class="d-flex align-items-center">`;
@@ -194,10 +217,10 @@ class poiMarker {
 				size = parseInt(basic.getStyleSheetValue(css_name, "height"));
 				// if (actlists.length > 0) html += `<img class="attention" src="./image/attention_noframe.svg">`;
 				html += `<img class="${css_name}" src="./${Conf.icon.path}/${poiMarker.get_icon(tags)}" icon-name="${name}">`;
-				let span = `<span class="icon" style="font-size: ${Conf.effect.text.size}px">${name}</span>`;
+				let span = `<span class="icon ${css_name} fs-${Conf.effect.text.size}">${name}</span>`;
 				if (name !== "" && Conf.effect.text.view) html += span;
 				let icon = L.divIcon({ "className": "", "iconSize": [size + span_width, size], "iconAnchor": [size / 2, size / 2], "html": html + "</div>" });
-				let marker = L.marker(new L.LatLng(params.poi.latlng[0], params.poi.latlng[1]), { icon: icon, draggable: false });
+				let marker = L.marker(new L.LatLng(params.poi.latlng[0], params.poi.latlng[1]), { icon: icon, draggable: false, zIndexOffset: params.zIndexOffset });
 				marker.addTo(map).on('click', e => { cMapmaker.detail_view(e.target.mapmaker_id) });
 				marker.mapmaker_id = params.poi.geojson.id;
 				marker.mapmaker_key = params.target;
@@ -206,24 +229,49 @@ class poiMarker {
 			});
 		};
 
-		console.log("Marker.set: " + target);
+		// set target(activity etc.)
+		let org_target = target;
+		target = target == "-" ? "" : target;
+		if (target !== "") target = (Conf.targets.indexOf(target) > -1) ? target : "activity";
+		console.log("poiMarker: set: " + target);
+
 		poiMarker.delete(target);
 		poiMarker.markers[target] = [];
 		let LL = GeoCont.get_LL();
 		let all = poiCont.get_target(target);
-		if (all.pois.geojson !== undefined) {		// pois表示
+		if (all.pois.geojson !== undefined) {	// pois&acts表示
 			all.pois.geojson.forEach(function (geojson, idx) {
 				let poi = { "geojson": all.pois.geojson[idx], "targets": all.pois.targets[idx], "latlng": all.pois.latlng[idx], "enable": all.pois.enable[idx] };
 				if (poi.enable && GeoCont.check_inner(poi.latlng, LL)) {
 					let actlists = poiCont.get_actlist(poi.geojson.id);
-					let actflag = (actonly && actlists.length > 0) ? true : !actonly;
-					let tags = poi.geojson.properties.tags == undefined ? poi.geojson.properties : poi.geojson.properties.tags;
-					if (actflag) {		// act ok
-						make_marker({ target: target, poi: poi, act: all.acts, langname: 'name' }).then(marker => {
+					let viewflag = (actonly && actlists.length > 0) ? true : !actonly;
+					if (viewflag && !poiMarker.osmpois.includes(geojson.id)) {		// act ok and 未表示の場合
+						let zIdx = actlists.length > 0 ? 1000 : 0;
+						poiMarker.osmpois.push(geojson.id);
+						make_marker({ target: target, poi: poi, langname: 'name', zIndexOffset: zIdx }).then(marker => {
 							if (marker !== undefined) marker.forEach(val => poiMarker.markers[target].push(val));	// 複数Marker対応(Wikipediaの解説など)
 						});
 					};
 				};
+			});
+		};
+
+		if (all.acts.length > 0) {				// acts表示
+			all.acts.forEach((act) => {
+				if (!poiMarker.osmpois.includes(act.osmid)) {
+					let osm = poiCont.get_osmid(act.osmid);
+					if (osm !== undefined && (act.category == org_target || org_target == "activity")) {
+						let poi = { "geojson": osm.geojson, "targets": osm.targets, "latlng": osm.latlng, "enable": osm.enable };
+						if (poi.enable && GeoCont.check_inner(poi.latlng, LL)) {
+							poiMarker.osmpois.push(poi.geojson.id);
+							make_marker({ target: target, poi: poi, langname: 'name' }).then(marker => {
+								if (marker !== undefined) marker.forEach(val => poiMarker.markers[target].push(val));	// 複数Marker対応(Wikipediaの解説など)
+							});
+						};
+					} else {
+						console.log("poiMarker: no load osm data: " + act.osmid);
+					};
+				}
 			});
 		};
 	}
@@ -251,7 +299,7 @@ class poiMarker {
 	static select(poiid, detail) {								// Map move to PoiId & Zoom(config)
 		return new Promise((resolve, reject) => {
 			let poi = poiCont.get_osmid(poiid);
-			let zoomlv = Conf.act_PoiViewZoom >= map.getZoom() ? Conf.act_PoiViewZoom : map.getZoom();
+			let zoomlv = Conf.PoiViewZoom["activity"] >= map.getZoom() ? Conf.PoiViewZoom["activity"] : map.getZoom();
 			if (poi !== undefined) {	// poi = osmid
 				map.flyTo(poi.latlng, zoomlv, { animate: true, duration: 0.5 });
 				if (detail) cMapmaker.detail_view(poi.geojson.id, poiid);
@@ -265,7 +313,7 @@ class poiMarker {
 					resolve();
 				} else {						// Not Found Poi
 					winCont.spinner(true);
-					OvPassCnt.get_osmid(poi.osmid).then((geojson) => {
+					OvPassCnt.get_osmids([poi.osmid]).then((geojson) => {
 						poiCont.add_geojson(geojson);
 						osmid = poiCont.get_osmid(poi.osmid);
 						map.flyTo(osmid.latlng, zoomlv, { animate: true, duration: 0.5 });
@@ -273,7 +321,7 @@ class poiMarker {
 						winCont.spinner(false);
 						resolve();
 					}).catch((e) => {
-						console.log(e);
+						console.log("poiMarker: " + e);
 						alert(glot.get("sverror_message"));
 						winCont.spinner(false);
 						reject();
@@ -283,12 +331,18 @@ class poiMarker {
 		});
 	}
 
-	static all_clear() { Object.keys(poiMarker.markers).forEach((target) => this.delete(target)) }	// all delete
+	static all_clear() {
+		Object.keys(poiMarker.markers).forEach((target) => this.delete(target));
+		poiMarker.osmpois = [];
+	}	// all delete
 
-	static delete(target, osmid) {														// Marker delete * don't set pdata
+	static delete(target, osmid) {					// Marker delete * don't set pdata
 		if (osmid == undefined || osmid == "") {	// all osmid
 			if (poiMarker.markers[target] !== undefined) {
-				poiMarker.markers[target].forEach(marker => delmaker(marker));
+				poiMarker.markers[target].forEach(marker => {
+					poiMarker.osmpois = poiMarker.osmpois.filter(n => n !== marker.mapmaker_id);
+					delmaker(marker);
+				});
 				poiMarker.markers[target] = [];
 			};
 		} else {									// delete osmid
@@ -296,6 +350,7 @@ class poiMarker {
 				let val = vals.length == undefined ? vals : vals[0];
 				return val.mapmaker_id == osmid;
 			});
+			poiMarker.osmpois = poiMarker.osmpois.filter(n => n !== poiMarker.markers[target][idx].mapmaker_id);
 			delmaker(poiMarker.markers[target][idx]);
 		};
 		map.closePopup();
@@ -307,141 +362,3 @@ class poiMarker {
 		};
 	}
 };
-
-// listTable管理(イベントやPoi情報を表示)
-class listTable {
-
-	static init() { // dataListに必要な初期化
-		console.log("listTable: init.");
-		listTable.columns = Conf.list.columns.common;
-		listTable.height = window.innerHeight * 0.4;
-		listTable.grid;
-		listTable.lock = false;		// true then disable listtable
-		listTable.list = [];
-		listTable.flist;
-		listTable.categorys;			// category list 
-	};
-
-	static make() {  									// カテゴリのリスト表示
-		listTable.list = listTable.list == undefined ? [] : listTable.list;
-		listTable.flist = this.#filter(list_category.value);
-		let option = { "columns": listTable.columns, "data": listTable.flist, "height": listTable.height, sort: true, fixedHeader: true, "autoWidth": false };
-		if (listTable.grid !== undefined) {
-			listTable.grid.updateConfig(option).forceRender(document.getElementById("tableid"));
-		} else {
-			listTable.grid = new gridjs.Grid(option).render(document.getElementById("tableid"));
-		};
-		if (listTable.grid.callbacks.rowClick == undefined) {
-			listTable.grid.on('rowClick', (...args) => {
-				console.log("listTable: rowClick start");
-				if (!listTable.lock) {
-					listTable.lock = true;
-					winCont.spinner(true);
-					try {
-						let actid = args[1].cell(0).data;
-						listTable.select(actid);
-						poiMarker.select(actid, true).then(() => {
-							console.log("listTable: rowClick OK");
-						}).catch(() => {
-							console.log("listTable: rowClick NG");
-						}).then(() => { listTable.lock = false });
-					} catch (error) {
-						winCont.spinner(false);
-						listTable.lock = false;
-					};
-				};
-			});
-		};
-	};
-
-	// make category list
-	static make_category(targets) {
-		let pois = [];
-		winCont.select_clear(`list_category`);
-		listTable.categorys = [];
-		for (const target of targets) {
-			switch (target) {
-				case "targets":		// ターゲットリストのカテゴリを表示
-					pois = Conf.targets.map(name => { return [glot.get(`target_${name}`), name] });
-					pois.map(poi => {
-						winCont.select_add(`list_category`, poi[0], poi[1]);
-						listTable.categorys.push(poi[1]);
-					});
-					break;
-				case "activity":	// アクティビティリストのカテゴリを表示
-					let acts = new Map;
-					for (const act of poiCont.pois().acts) {
-						acts.set(act.category, true); // 同じキーに何度も値を設定しても問題ない
-					};
-					acts = Array.from(acts.keys());
-					for (const category of acts) {
-						winCont.select_add(`list_category`, category, category)
-						listTable.categorys.push(category);
-					};
-					break;
-				default:			// タグからカテゴリを表示
-					pois = listTable.list.map(data => { return [data[2], data[4] == undefined ? "" : data[4][0]] });
-					pois = [...new Set(pois.map(JSON.stringify))].map(JSON.parse);
-					//pois = pois.filter((x, i, self) => { return self.indexOf(x) === i });	//
-					pois.sort().map(poi => {
-						winCont.select_add(`list_category`, poi[0], poi[1])
-						listTable.categorys.push(poi);
-					});
-					break;
-			};
-		};
-	};
-
-	// select category
-	static select_category(catname) {
-		for (const category of this.categorys) {
-			if (catname == category) {
-				list_category.value = catname;
-				break;
-			}
-		};
-	};
-
-	static filter_category() {		// subset of change list_category
-		if (listTable.list.length > 0) {
-			listTable.flist = list_category.value !== "-" ? listTable.#filter(list_category.value) : listTable.list;
-			listTable.grid.updateConfig({ "data": listTable.flist, "autoWidth": false }).forceRender(document.getElementById("tableid"));
-		};
-	};
-
-	static filter_keyword() {		// subset of change list_keyword
-		if (listTable.list.length > 0) {
-			listTable.flist = listTable.#filter(list_keyword.value);
-			listTable.grid.updateConfig({ "data": listTable.flist }).forceRender(document.getElementById("tableid"));
-		};
-	};
-
-	static disabled(mode) {
-		list_category.disabled = mode;
-		list_keyword.disabled = mode;
-		listTable.lock = mode;
-	};
-
-	static heightSet(height) {								// set table height
-		listTable.grid.updateConfig({ "height": height }).forceRender(document.getElementById("tableid"));
-		cMapmaker.mode_change('list');
-	};
-
-	static select(actid) {									// リスト選択
-		let rows = document.getElementsByClassName('gridjs-tr selected');
-		if (rows.length > 0) Array.from(rows).forEach(row => { row.classList.remove("selected") });
-		let lstidx = listTable.flist.findIndex(elm => elm[0] === actid);
-		if (lstidx > -1) {
-			let row = document.querySelector("#tableid table").rows[lstidx + 1];
-			row.classList.add("selected");
-			row.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
-		}
-	}
-
-	static #filter(keyword) {								// 指定したキーワードで絞り込み
-		if (listTable.list == undefined) return [];
-		return listTable.list.filter((row) => {
-			return (row.join(',').indexOf(keyword) > -1) || keyword == "-";
-		});
-	};
-}

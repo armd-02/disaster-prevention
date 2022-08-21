@@ -1,9 +1,9 @@
 {
-	"title": {
+	"site_title": {
 		"ja": "設備管理MAP(デモ)",
 		"en": "Equipment management MAP(DEMO)"
 	},
-	"subtitle": {
+	"site_subtitle": {
 		"ja": "Powered by Community Map Maker",
 		"en": "Powered by Community Map Maker"
 	},

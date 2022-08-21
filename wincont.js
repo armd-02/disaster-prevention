@@ -3,6 +3,16 @@ class winCont {
 
     constructor() { this.modal_mode = false }
 
+    static playback(view){
+		let display = view ? "remove" : "add";
+		list_playback_control.classList[display]('d-none');
+    }
+
+    static download(view){
+		let display = view ? "remove" : "add";
+		list_download.classList[display]('d-none');
+    }
+
     static splash(mode) {
         document.getElementById("splash_image").setAttribute("src", Conf.splash.url);
         let act = mode ? { backdrop: 'static', keyboard: false } : 'hide';
@@ -19,7 +29,7 @@ class winCont {
         }
     }
 
-    // open modal window(p: title,message,mode(yes no close),callback_yes,callback_no,callback_close,append)
+    // open modal window(p: title,message,mode(yes no close),callback_yes,callback_no,callback_close,append,openid)
     // append: append button(Conf.detail_view.buttons)
     static modal_open(p) {
         let MW = "modal_window";
@@ -44,10 +54,16 @@ class winCont {
         winCont.modal_progress(0);
         $(`#${MW}`).modal({ backdrop: false, keyboard: true });
         winCont.modal_mode = true;
+        $(`#${MW}`).off('shown.bs.modal');
         $(`#${MW}`).on('shown.bs.modal', () => {
             ["yes", "no", "close"].forEach(keyn => delEvents(keyn));
-            if (!winCont.modal_mode) $(`#${MW}`).modal('hide')
+            if (!winCont.modal_mode) $(`#${MW}`).modal('hide');
+		    if (p.openid !== undefined){
+                let act = document.getElementById(p.openid.replace("/", ""));
+                if (act !== null) act.scrollIntoView();        // 指定したidのactivityがあればスクロール
+            };
         });                 // Open中にCloseされた時の対応
+        $(`#${MW}`).off('hidden.bs.modal');
         $(`#${MW}`).on('hidden.bs.modal', () => {
             ["yes", "no", "close"].forEach(keyn => delEvents(keyn));
             p[`callback_${p.callback_close ? "close" : "no"}`]();
@@ -122,8 +138,8 @@ class winCont {
 
     static window_resize() {
         console.log("Window: resize.");
-        let mapWidth = basic.isSmartPhone() ? window.innerWidth - 50 : window.innerWidth * 0.3;
-        mapWidth = mapWidth < 300 ? 300 : mapWidth;
+        let mapWidth = basic.isSmartPhone() ? window.innerWidth - 20 : window.innerWidth * 0.3;
+        mapWidth = mapWidth < 350 ? 350 : mapWidth;
         if (typeof baselist !== "undefined") baselist.style.width = mapWidth + "px";
         if (typeof mapid !== "undefined") mapid.style.height = window.innerHeight + "px";
     }
